@@ -1,0 +1,147 @@
+- hosts: all
+  vars_files:
+    - vars/main.yml
+
+  tasks:
+    - name: Update packages
+      become: yes
+      ansible.builtin.apt:
+        update_cache: yes
+        upgrade: "yes"
+
+    - name: Install packages
+      become: yes
+      ansible.builtin.apt:
+        name: [git, libpq5, redis-server, nginx, supervisor, postgresql, python3-psycopg2, solr-tomcat]
+        state: present
+
+    - name: Remove packages
+      become: yes
+      ansible.builtin.apt:
+        name: apache2
+        purge: yes
+        autoremove: yes
+        state: absent
+
+    - name: Get CKAN package
+      ansible.builtin.get_url:
+        url: https://packaging.ckan.org/python-ckan_2.9-py3-focal_amd64.deb
+        dest: /tmp/
+
+    - name: Install CKAN package
+      become: yes
+      ansible.builtin.apt:
+        deb: /tmp/python-ckan_2.9-py3-focal_amd64.deb
+
+    - name: Allow PostgreSQL administrative access from Ansible
+      become: yes
+      ansible.builtin.lineinfile:
+        path: /etc/postgresql/12/main/pg_hba.conf
+        regexp: "(local   all             postgres                                )peer$"
+        line: '\1trust'
+        backrefs: yes
+
+    - name: Restart PostgreSQL to effectuate administrative access from Ansible
+      become: yes
+      ansible.builtin.systemd:
+        name: postgresql
+        state: reloaded
+
+    - name: Create ckan_default PostgreSQL user
+      become: postgres
+      community.postgresql.postgresql_user:
+        name: ckan_default
+        password: postgrespass
+
+    - name: Create ckan_default database
+      community.postgresql.postgresql_db:
+        name: ckan_default
+        owner: ckan_default
+
+    - name: Set database, database user and database user password in CKAN config
+      become: yes
+      ansible.builtin.lineinfile:
+        path: /etc/ckan/default/ckan.ini
+        regexp: '^(sqlalchemy.url =).*'
+        line: '\1 postgresql://ckan_default:postgrespass@localhost/ckan_default'
+        backrefs: yes
+
+    - name: Change default Tomcat port
+      become: yes
+      ansible.builtin.lineinfile:
+        path: /etc/tomcat9/server.xml
+        regexp: '(<Connector port=")8080(" protocol="HTTP/1.1")'
+        line: '\g<1>8983\g<2>'
+        backrefs: yes
+
+    - name: Replace default Solr schema file
+      become: yes
+      file:
+        src: /usr/lib/ckan/default/src/ckan/ckan/config/solr/schema.xml
+        dest: /etc/solr/conf/schema.xml
+        state: link
+        force: yes
+
+    - name: Restart Tomcat
+      become: yes
+      ansible.builtin.systemd:
+        name: tomcat9
+        state: restarted
+
+    - name: Set Solr URL in CKAN config
+      become: yes
+      ansible.builtin.lineinfile:
+        path: /etc/ckan/default/ckan.ini
+        regexp: '^#solr_url =.*'
+        line: 'solr_url = http://127.0.0.1:8983/solr'
+        backrefs: yes
+
+    - name: Set site_id in CKAN config
+      become: yes
+      ansible.builtin.lineinfile:
+        path: /etc/ckan/default/ckan.ini
+        regexp: '^(ckan.site_id =).*'
+        line: '\1 cd2'
+        backrefs: yes
+
+    - name: Set site_url in CKAN config
+      become: yes
+      ansible.builtin.lineinfile:
+        path: /etc/ckan/default/ckan.ini
+        regexp: '^(ckan.site_url =).*'
+        line: '\1 http://cd2.test'
+        backrefs: yes
+
+    - name: Initialize CKAN database
+      become: yes
+      ansible.builtin.command: ckan db init
+
+    - name: Reload Supervisor daemon
+      become: yes
+      ansible.builtin.command: supervisorctl reload
+
+    - name: Restart Nginx
+      become: yes
+      ansible.builtin.systemd:
+        name: nginx
+        state: restarted
+
+          #    # An SSH keypair (id_rsa + id_rsa.pub) with access to the cd2 repository should be placed in the
+          #    # provisioning/files/ directory. It is recommended, as a security precaution, to generate a
+          #    # dedicated CD² keypair (e.g. using ssh-keygen) and to restrict it's access to the cd2 repository.
+          #    #
+          #    # To-do: check if SSH keys exist locally before copying
+          #    - name: Copy SSH keys
+          #      ansible.builtin.copy:
+          #        src: "{{ item }}"
+          #        dest: ~/.ssh/
+          #        mode: preserve
+          #      with_items:
+          #        - files/id_rsa.pub
+          #        - files/id_rsa
+          #
+          #    - name: Checkout YPP repository
+          #      ansible.builtin.git:
+          #        repo: git@github.com:UtrechtUniversity/ypp
+          #        accept_hostkey: yes
+          #        dest: ~/ypp
