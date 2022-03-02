@@ -124,6 +124,15 @@
         name: nginx
         state: restarted
 
+    - name: Add default admin user
+      become: yes
+      ansible.builtin.expect:
+        command: ckan -c /etc/ckan/default/ckan.ini sysadmin add admin email=admin@cd2.test name=admin
+        responses:
+          Create new user: Y
+          Password: password
+          Repeat for confirmation: password
+
           #    # An SSH keypair (id_rsa + id_rsa.pub) with access to the cd2 repository should be placed in the
           #    # provisioning/files/ directory. It is recommended, as a security precaution, to generate a
           #    # dedicated CD² keypair (e.g. using ssh-keygen) and to restrict it's access to the cd2 repository.
