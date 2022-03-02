@@ -1,6 +1,4 @@
 - hosts: all
-  vars_files:
-    - vars/main.yml
 
   tasks:
     - name: Update packages
