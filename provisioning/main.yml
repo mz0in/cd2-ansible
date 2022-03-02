@@ -10,7 +10,7 @@
     - name: Install packages
       become: yes
       ansible.builtin.apt:
-        name: [git, libpq5, redis-server, nginx, supervisor, postgresql, python3-psycopg2, solr-tomcat]
+        name: [git, libpq5, redis-server, nginx, supervisor, postgresql, python3-psycopg2, solr-tomcat, pipenv]
         state: present
 
     - name: Remove packages
@@ -132,6 +132,13 @@
           Create new user: Y
           Password: password
           Repeat for confirmation: password
+
+    - name: Install ckanext-scheming extension
+      become: yes
+      ansible.builtin.pip:
+        name: git+https://github.com/ckan/ckanext-scheming.git#egg=ckanext-scheming
+        virtualenv: /usr/lib/ckan/default
+        editable: yes
 
           #    # An SSH keypair (id_rsa + id_rsa.pub) with access to the cd2 repository should be placed in the
           #    # provisioning/files/ directory. It is recommended, as a security precaution, to generate a
