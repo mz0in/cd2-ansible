@@ -46,7 +46,6 @@
         state: reloaded
 
     - name: Create ckan_default PostgreSQL user
-      become: postgres
       community.postgresql.postgresql_user:
         name: ckan_default
         password: postgrespass
