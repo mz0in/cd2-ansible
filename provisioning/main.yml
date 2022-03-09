@@ -139,22 +139,66 @@
         virtualenv: /usr/lib/ckan/default
         editable: yes
 
-          #    # An SSH keypair (id_rsa + id_rsa.pub) with access to the cd2 repository should be placed in the
-          #    # provisioning/files/ directory. It is recommended, as a security precaution, to generate a
-          #    # dedicated CD² keypair (e.g. using ssh-keygen) and to restrict it's access to the cd2 repository.
-          #    #
-          #    # To-do: check if SSH keys exist locally before copying
-          #    - name: Copy SSH keys
-          #      ansible.builtin.copy:
-          #        src: "{{ item }}"
-          #        dest: ~/.ssh/
-          #        mode: preserve
-          #      with_items:
-          #        - files/id_rsa.pub
-          #        - files/id_rsa
-          #
-          #    - name: Checkout YPP repository
-          #      ansible.builtin.git:
-          #        repo: git@github.com:UtrechtUniversity/ypp
-          #        accept_hostkey: yes
-          #        dest: ~/ypp
+    # An SSH keypair with access to the cd2 repository should be placed in the provisioning/files/
+    # directory. The filenames of the keypair files must begin with id_ (e.g. id_rsa + id_rsa.pub).
+    # It is recommended, as a security precaution, to generate a dedicated CD² keypair (e.g. using
+    # ssh-keygen) and to restrict it's access to the cd2 repository.
+    - name: Get filenames of files of SSH keypair to copy
+      find:
+        paths: files/
+        patterns: ^id_
+        use_regex: yes
+      register: keypair_filenames
+      delegate_to: localhost
+
+    - name: Check if keypair files available
+      ansible.builtin.fail:
+        msg: No keypair files present in provisioning/files/!
+      when: not keypair_filenames.files
+
+    - name: Copy SSH keys
+      become: yes
+      ansible.builtin.copy:
+        src: "{{ item.path }}"
+        dest: /root/.ssh/
+        mode: preserve
+      with_items:
+        - "{{ keypair_filenames.files }}"
+
+    - name: Add SSH fingerprint of git.science.uu.nl to known_hosts
+      become: yes
+      shell: ssh-keyscan -H git.science.uu.nl >> /root/.ssh/known_hosts
+
+    - name: Install ckanext-msl_ckan_util repository
+      become: yes
+      ansible.builtin.pip:
+        name: git+ssh://git@git.science.uu.nl/epos-msl/msl_ckan_util.git#egg=ckanext-msl_ckan_util
+        virtualenv: /usr/lib/ckan/default
+        editable: yes
+
+    - name: Enable ckanext-scheming and ckanext-msl_ckan_util plugins
+      become: yes
+      ansible.builtin.lineinfile:
+        path: /etc/ckan/default/ckan.ini
+        backrefs: yes
+        regexp: ^(ckan\.plugins = .* recline_view)$
+        line: \1 scheming_datasets scheming_groups scheming_organizations msl_custom_facets msl_repeating_fields
+
+    - name: Add ckanext-msl_ckan_util config settings
+      become: yes
+      ansible.builtin.blockinfile:
+        path: /etc/ckan/default/ckan.ini
+        block: |
+          # msl_ckan_util settings
+          ckan.mslfacets.dataset_config = ckanext.msl_ckan_util:samples/facets.json
+          ckan.mslindexfields.fields_config = ckanext.msl_ckan_util:samples/msl_index_fields.json
+
+    - name: Reload Supervisor daemon
+      become: yes
+      ansible.builtin.command: supervisorctl reload
+
+    - name: Restart Nginx
+      become: yes
+      ansible.builtin.systemd:
+        name: nginx
+        state: restarted
