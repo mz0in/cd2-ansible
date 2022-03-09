@@ -7,6 +7,8 @@ Ansible playbook for the deployment of the CD² metadata catalogue.
 
 # Confirmed to work on the following host operating systems
 - Debian 10
+- Ubuntu 21.04
+
 
 # Usage
 - Navigate to the ypp-ansible directory
