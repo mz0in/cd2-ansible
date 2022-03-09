@@ -35,8 +35,8 @@
       become: yes
       ansible.builtin.lineinfile:
         path: /etc/postgresql/12/main/pg_hba.conf
-        regexp: "(local   all             postgres                                )peer$"
-        line: '\1trust'
+        regexp: (local   all             postgres                                )peer$
+        line: \1trust
         backrefs: yes
 
     - name: Restart PostgreSQL to effectuate administrative access from Ansible
@@ -59,16 +59,16 @@
       become: yes
       ansible.builtin.lineinfile:
         path: /etc/ckan/default/ckan.ini
-        regexp: '^(sqlalchemy.url =).*'
-        line: '\1 postgresql://ckan_default:postgrespass@localhost/ckan_default'
+        regexp: ^(sqlalchemy.url =).*
+        line: \1 postgresql://ckan_default:postgrespass@localhost/ckan_default
         backrefs: yes
 
     - name: Change default Tomcat port
       become: yes
       ansible.builtin.lineinfile:
         path: /etc/tomcat9/server.xml
-        regexp: '(<Connector port=")8080(" protocol="HTTP/1.1")'
-        line: '\g<1>8983\g<2>'
+        regexp: (<Connector port=")8080(" protocol="HTTP/1.1")
+        line: \g<1>8983\g<2>
         backrefs: yes
 
     - name: Replace default Solr schema file
@@ -89,24 +89,24 @@
       become: yes
       ansible.builtin.lineinfile:
         path: /etc/ckan/default/ckan.ini
-        regexp: '^#solr_url =.*'
-        line: 'solr_url = http://127.0.0.1:8983/solr'
+        regexp: ^#solr_url =.*
+        line: solr_url = http://127.0.0.1:8983/solr
         backrefs: yes
 
     - name: Set site_id in CKAN config
       become: yes
       ansible.builtin.lineinfile:
         path: /etc/ckan/default/ckan.ini
-        regexp: '^(ckan.site_id =).*'
-        line: '\1 cd2'
+        regexp: ^(ckan.site_id =).*
+        line: \1 cd2
         backrefs: yes
 
     - name: Set site_url in CKAN config
       become: yes
       ansible.builtin.lineinfile:
         path: /etc/ckan/default/ckan.ini
-        regexp: '^(ckan.site_url =).*'
-        line: '\1 http://cd2.test'
+        regexp: ^(ckan.site_url =).*
+        line: \1 http://cd2.test
         backrefs: yes
 
     - name: Initialize CKAN database
