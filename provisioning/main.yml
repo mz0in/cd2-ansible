@@ -109,6 +109,29 @@
         line: \1 http://cd2.test
         backrefs: yes
 
+    - name: Set site_title in CKAN config
+      become: yes
+      ansible.builtin.lineinfile:
+        path: /etc/ckan/default/ckan.ini
+        regexp: ^(ckan.site_title =).*
+        line: \1 CD²
+        backrefs: yes
+
+    - name: Set site_description in CKAN config
+      become: yes
+      ansible.builtin.lineinfile:
+        path: /etc/ckan/default/ckan.ini
+        regexp: ^(ckan.site_description =).*
+        line: \1 The CD² metadata catalogue aggregates the metadata of the Dutch youth development cohort studies collaborating under the Consortium on Individual Development (CID) umbrella.
+        backrefs: yes
+
+    - name: Set site_intro_text in CKAN config
+      become: yes
+      ansible.builtin.lineinfile:
+        path: /etc/ckan/default/ckan.ini
+        line: ckan.site_intro_text = The CD² metadata catalogue aggregates the metadata of the Dutch youth development cohort studies collaborating under the Consortium on Individual Development (CID) umbrella.
+        insertafter: ^ckan\.site_description =.*
+
     - name: Initialize CKAN database
       become: yes
       ansible.builtin.command: ckan db init
@@ -131,6 +154,22 @@
           Create new user: Y
           Password: password
           Repeat for confirmation: password
+
+    - name: Upload CD² logo
+      become: yes
+      ansible.builtin.copy:
+        src: cd2-logo.svg
+        dest: /usr/lib/ckan/default/src/ckan/ckan/public/base/images/cd2-logo.svg
+        owner: www-data
+        group: www-data
+
+    - name: Set CD² logo
+      become: yes
+      ansible.builtin.lineinfile:
+        path: /etc/ckan/default/ckan.ini
+        regexp: ^(ckan.site_logo =).*
+        line: \1 /base/images/cd2-logo.svg
+        backrefs: yes
 
     - name: Install ckanext-scheming extension
       become: yes
