@@ -227,6 +227,7 @@
       become: yes
       ansible.builtin.blockinfile:
         path: /etc/ckan/default/ckan.ini
+        insertafter: ^ckan\.plugins.*$
         block: |
           # msl_ckan_util settings
           ckan.mslfacets.dataset_config = ckanext.msl_ckan_util:samples/facets.json
