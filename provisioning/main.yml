@@ -215,13 +215,69 @@
         virtualenv: /usr/lib/ckan/default
         editable: yes
 
-    - name: Enable ckanext-scheming and ckanext-msl_ckan_util plugins
+    - name: Install ckanext-msl_ckan repository
+      become: yes
+      ansible.builtin.pip:
+        name: git+ssh://git@git.science.uu.nl/epos-msl/epos-msl.git#egg=ckanext-msl_ckan
+        virtualenv: /usr/lib/ckan/default
+        editable: yes
+
+    - name: Enable ckanext-msl_ckan, ckanext-scheming and ckanext-msl_ckan_util plugins
       become: yes
       ansible.builtin.lineinfile:
         path: /etc/ckan/default/ckan.ini
         backrefs: yes
-        regexp: ^(ckan\.plugins = .* recline_view)$
-        line: \1 scheming_datasets scheming_groups scheming_organizations msl_custom_facets msl_repeating_fields
+        regexp: ^(ckan\.plugins = .* recline_view).*$
+        line: \1 msl_ckan scheming_datasets scheming_groups scheming_organizations msl_custom_facets msl_repeating_fields
+
+    - name: Add msl_ckan specific field definitions to the Solr schema
+      become: yes
+      ansible.builtin.blockinfile:
+        path: /usr/lib/ckan/default/src/ckan/ckan/config/solr/schema.xml
+        insertafter: <field name="_version_".*/>$
+        marker: <!-- {mark} ANSIBLE MANAGED FIELD BLOCK -->
+        block: |2
+              <!-- MSL custom fields for indexing and web services -->
+              <field name="msl_hidden_text" type="text" indexed="true" stored="false" multiValued="true"/>
+
+              <!-- coming from IPackageController msl_search.MslIndexRepeatedFieldsPlugin::before(index) -->
+              <field name="msl_material" type="string" indexed="true" stored="true" multiValued="true"/>
+              <field name="msl_rock_measured_property" type="string" indexed="true" stored="true" multiValued="true"/>
+              <field name="msl_rock_apparatus" type="string" indexed="true" stored="true" multiValued="true"/>
+              <field name="msl_rock_ancillary_equipment" type="string" indexed="true" stored="true" multiValued="true"/>
+              <field name="msl_rock_pore_fluid" type="string" indexed="true" stored="true" multiValued="true"/>
+              <field name="msl_rock_inferred_deformation_behavior" type="string" indexed="true" stored="true" multiValued="true"/>
+              <field name="msl_author_name" type="string" indexed="true" stored="true" multiValued="true"/>
+              <field name="msl_author_name_text" type="text" indexed="true" stored="false" multiValued="true"/>
+              <field name="msl_lab_name" type="string" indexed="true" stored="true" multiValued="true"/>
+              <field name="msl_lab_name_text" type="text" indexed="true" stored="false" multiValued="true"/>
+
+    - name: Add msl_ckan specific copyField definitions to the Solr schema
+      become: yes
+      ansible.builtin.blockinfile:
+        path: /usr/lib/ckan/default/src/ckan/ckan/config/solr/schema.xml
+        insertafter: <copyField source="author".*/>$
+        marker: <!-- {mark} ANSIBLE MANAGED COPYFIELD BLOCK -->
+        block: |
+          <!-- customizations MSL-->
+          <copyField source="msl_material" dest="text"/>
+          <copyField source="msl_hidden_text" dest="text"/>
+          <copyField source="msl_rock_measured_property" dest="text"/>
+          <copyField source="msl_rock_apparatus" dest="text"/>
+          <copyField source="msl_rock_ancillary_equipment" dest="text"/>
+          <copyField source="msl_rock_pore_fluid" dest="text"/>
+          <copyField source="msl_rock_inferred_deformation_behavior" dest="text"/>
+          <copyField source="msl_author_name" dest="text"/>
+          <copyField source="msl_author_name" dest="msl_author_name_text"/>
+          <copyField source="msl_lab_name" dest="text"/>
+          <copyField source="msl_lab_name" dest="msl_lab_name_text"/>
+
+    - name: Add msl_ckan specific setting to the Solr config
+      become: yes
+      ansible.builtin.replace:
+        dest: /etc/solr/conf/solrconfig.xml
+        regexp: (^.*requestHandler name="/select"[\s\S]*name="rows".*\n.*name="df".*)
+        replace: \1\n       <str name="q.op">AND</str>
 
     - name: Add ckanext-msl_ckan_util config settings
       become: yes
@@ -229,6 +285,10 @@
         path: /etc/ckan/default/ckan.ini
         insertafter: ^ckan\.plugins.*$
         block: |
+          # msl_ckan settings
+          scheming.dataset_schemas          = ckanext.msl_ckan:schemas/datasets/ckan_dataset.yaml ckanext.msl_ckan:schemas/datasets/rock_physics.yml ckanext.msl_ckan:schemas/datasets/paleomagnetic.yml ckanext.msl_ckan:schemas/datasets/analogue_modelling.yml ckanext.msl_ckan:schemas/datasets/labs.json
+          scheming.group_schemas            = ckanext.msl_ckan:schemas/groups/custom_group_msl_subdomain.json
+          scheming.organization_schemas     = ckanext.msl_ckan:schemas/organizations/custom_org_institute.json
           # msl_ckan_util settings
           ckan.mslfacets.dataset_config = ckanext.msl_ckan_util:samples/facets.json
           ckan.mslindexfields.fields_config = ckanext.msl_ckan_util:samples/msl_index_fields.json
