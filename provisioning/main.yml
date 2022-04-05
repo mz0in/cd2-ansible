@@ -208,6 +208,10 @@
       become: yes
       shell: ssh-keyscan -H git.science.uu.nl >> /root/.ssh/known_hosts
 
+    - name: Add SSH fingerprint of github.com to known_hosts
+      become: yes
+      shell: ssh-keyscan -H github.com >> /root/.ssh/known_hosts
+
     - name: Install ckanext-msl_ckan_util repository
       become: yes
       ansible.builtin.pip:
@@ -218,7 +222,7 @@
     - name: Install ckanext-msl_ckan repository
       become: yes
       ansible.builtin.pip:
-        name: git+ssh://git@git.science.uu.nl/epos-msl/epos-msl.git#egg=ckanext-msl_ckan
+        name: git+ssh://git@github.com/UtrechtUniversity/cd2-ckan.git#egg=ckanext-msl_ckan
         virtualenv: /usr/lib/ckan/default
         editable: yes
 
