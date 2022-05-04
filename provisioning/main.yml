@@ -132,6 +132,15 @@
         line: ckan.site_intro_text = The CD² metadata catalogue aggregates the metadata of the Dutch youth development cohort studies collaborating under the Consortium on Individual Development (CID) umbrella.
         insertafter: ^ckan\.site_description =.*
 
+    - name: Set ckan.dataset.create_on_ui_requires_resources to false in CKAN config
+      become: yes
+      ansible.builtin.blockinfile:
+        path: /etc/ckan/default/ckan.ini
+        #insertbefore: ^## Datapusher settings$
+        block: |
+          ## Form settings
+          ckan.dataset.create_on_ui_requires_resources = false
+
     - name: Initialize CKAN database
       become: yes
       ansible.builtin.command: ckan db init
