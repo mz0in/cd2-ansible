@@ -297,7 +297,7 @@
           mslfacets.dataset_config      = ckanext.msl_ckan:config/facets.json
           mslindexfields.field_config   = ckanext.msl_ckan:config/msl_index_fields.json
 
-    - name: Reload Supervisor daemon
+    - name: Reload CKAN
       become: yes
       ansible.builtin.command: supervisorctl reload
 
