@@ -301,6 +301,12 @@
       become: yes
       ansible.builtin.command: supervisorctl reload
 
+    - name: Restart Solr
+      become: yes
+      ansible.builtin.systemd:
+        name: tomcat9
+        state: restarted
+
     - name: Restart Nginx
       become: yes
       ansible.builtin.systemd:
