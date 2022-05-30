@@ -297,6 +297,7 @@
       ansible.builtin.blockinfile:
         path: /etc/ckan/default/ckan.ini
         insertafter: ^ckan\.plugins.*$
+        marker: "# {mark} ANSIBLE MANAGED MSL_CKAN BLOCK"
         block: |
           # msl_ckan settings
           scheming.dataset_schemas      = ckanext.msl_ckan:schemas/datasets/ckan_dataset.yaml ckanext.msl_ckan:schemas/datasets/ddi_group.yml ckanext.msl_ckan:schemas/datasets/ddi_studyunit.yml
