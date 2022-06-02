@@ -136,10 +136,18 @@
       become: yes
       ansible.builtin.blockinfile:
         path: /etc/ckan/default/ckan.ini
-        #insertbefore: ^## Datapusher settings$
+        insertbefore: ^## Datapusher settings$
+        marker: "# {mark} ANSIBLE MANAGED FORM SETTINGS BLOCK"
         block: |
           ## Form settings
           ckan.dataset.create_on_ui_requires_resources = false
+
+    - name: Set ckan.dataset.create_on_ui_requires_resources to false in CKAN config (proper formatting)
+      become: yes
+      ansible.builtin.lineinfile:
+        path: /etc/ckan/default/ckan.ini
+        insertafter: "# END ANSIBLE MANAGED FORM SETTINGS BLOCK"
+        line: "\n"
 
     - name: Initialize CKAN database
       become: yes
