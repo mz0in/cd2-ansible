@@ -1,6 +1,18 @@
 - hosts: all
 
   tasks:
+    - name: Add Nodesource APT repository key
+      become: yes
+      apt_key:
+        url: "https://deb.nodesource.com/gpgkey/nodesource.gpg.key"
+        state: present
+
+    - name: Add Nodesource APT repository
+      become: yes
+      apt_repository:
+        repo: "deb https://deb.nodesource.com/node_18.x bullseye main"
+        state: present
+
     - name: Update packages
       become: yes
       ansible.builtin.apt:
@@ -10,7 +22,7 @@
     - name: Install packages
       become: yes
       ansible.builtin.apt:
-        name: [git, libpq5, redis-server, nginx, supervisor, postgresql, python3-psycopg2, solr-tomcat, pipenv]
+        name: [git, libpq5, redis-server, nginx, supervisor, postgresql, python3-psycopg2, solr-tomcat, pipenv, nodejs]
         state: present
 
     - name: Remove packages
@@ -20,6 +32,12 @@
         purge: yes
         autoremove: yes
         state: absent
+
+    - name: Install Less.js from the NPM registry
+      become: yes
+      community.general.npm:
+        name: less
+        global: yes
 
     - name: Get CKAN package
       ansible.builtin.get_url:
@@ -239,13 +257,24 @@
         virtualenv: /usr/lib/ckan/default
         editable: yes
 
+    - name: Install ckanext-cd2_theme repository
+      become: yes
+      ansible.builtin.pip:
+        name: git+ssh://git@github.com/UtrechtUniversity/ckanext-cd2_theme.git#egg=ckanext-cd2_theme
+        virtualenv: /usr/lib/ckan/default
+        editable: yes
+
+    - name: Compile CD² theme CSS
+      become: yes
+      ansible.builtin.command: lessc /usr/lib/ckan/default/src/ckanext-cd2-theme/ckanext/cd2_theme/less/main.less /usr/lib/ckan/default/src/ckanext-cd2-theme/ckanext/cd2_theme/fanstatic/cd2_custom.css
+
     - name: Enable ckanext-msl_ckan, ckanext-scheming and ckanext-msl_ckan_util plugins
       become: yes
       ansible.builtin.lineinfile:
         path: /etc/ckan/default/ckan.ini
         backrefs: yes
         regexp: ^(ckan\.plugins = .* recline_view).*$
-        line: \1 msl_ckan scheming_datasets scheming_groups scheming_organizations msl_custom_facets msl_repeating_fields
+        line: \1 cd2_theme msl_ckan scheming_datasets scheming_groups scheming_organizations msl_custom_facets msl_repeating_fields
 
     - name: Add msl_ckan specific field definitions to the Solr schema
       become: yes
