@@ -150,7 +150,7 @@
         line: ckan.site_intro_text = The CD² metadata catalogue aggregates the metadata of the Dutch youth development cohort studies collaborating under the Consortium on Individual Development (CID) umbrella.
         insertafter: ^ckan\.site_description =.*
 
-    - name: Set ckan.dataset.create_on_ui_requires_resources to false in CKAN config
+    - name: Set ckan.dataset.create_on_ui_requires_resources to false in CKAN config, and increase search facets limit
       become: yes
       ansible.builtin.blockinfile:
         path: /etc/ckan/default/ckan.ini
@@ -159,6 +159,8 @@
         block: |
           ## Form settings
           ckan.dataset.create_on_ui_requires_resources = false
+          ## Search facet settings
+          search.facets.limit = 500
 
     - name: Set ckan.dataset.create_on_ui_requires_resources to false in CKAN config (proper formatting)
       become: yes
@@ -276,49 +278,8 @@
         regexp: ^(ckan\.plugins = .* recline_view).*$
         line: \1 cd2_theme msl_ckan scheming_datasets scheming_groups scheming_organizations msl_custom_facets msl_repeating_fields
 
-    - name: Add msl_ckan specific field definitions to the Solr schema
-      become: yes
-      ansible.builtin.blockinfile:
-        path: /usr/lib/ckan/default/src/ckan/ckan/config/solr/schema.xml
-        insertafter: <field name="_version_".*/>$
-        marker: <!-- {mark} ANSIBLE MANAGED FIELD BLOCK -->
-        block: |2
-              <!-- MSL custom fields for indexing and web services -->
-              <field name="msl_hidden_text" type="text" indexed="true" stored="false" multiValued="true"/>
 
-              <!-- coming from IPackageController msl_search.MslIndexRepeatedFieldsPlugin::before(index) -->
-              <field name="msl_material" type="string" indexed="true" stored="true" multiValued="true"/>
-              <field name="msl_rock_measured_property" type="string" indexed="true" stored="true" multiValued="true"/>
-              <field name="msl_rock_apparatus" type="string" indexed="true" stored="true" multiValued="true"/>
-              <field name="msl_rock_ancillary_equipment" type="string" indexed="true" stored="true" multiValued="true"/>
-              <field name="msl_rock_pore_fluid" type="string" indexed="true" stored="true" multiValued="true"/>
-              <field name="msl_rock_inferred_deformation_behavior" type="string" indexed="true" stored="true" multiValued="true"/>
-              <field name="msl_author_name" type="string" indexed="true" stored="true" multiValued="true"/>
-              <field name="msl_author_name_text" type="text" indexed="true" stored="false" multiValued="true"/>
-              <field name="msl_lab_name" type="string" indexed="true" stored="true" multiValued="true"/>
-              <field name="msl_lab_name_text" type="text" indexed="true" stored="false" multiValued="true"/>
-
-    - name: Add msl_ckan specific copyField definitions to the Solr schema
-      become: yes
-      ansible.builtin.blockinfile:
-        path: /usr/lib/ckan/default/src/ckan/ckan/config/solr/schema.xml
-        insertafter: <copyField source="author".*/>$
-        marker: <!-- {mark} ANSIBLE MANAGED COPYFIELD BLOCK -->
-        block: |
-          <!-- customizations MSL-->
-          <copyField source="msl_material" dest="text"/>
-          <copyField source="msl_hidden_text" dest="text"/>
-          <copyField source="msl_rock_measured_property" dest="text"/>
-          <copyField source="msl_rock_apparatus" dest="text"/>
-          <copyField source="msl_rock_ancillary_equipment" dest="text"/>
-          <copyField source="msl_rock_pore_fluid" dest="text"/>
-          <copyField source="msl_rock_inferred_deformation_behavior" dest="text"/>
-          <copyField source="msl_author_name" dest="text"/>
-          <copyField source="msl_author_name" dest="msl_author_name_text"/>
-          <copyField source="msl_lab_name" dest="text"/>
-          <copyField source="msl_lab_name" dest="msl_lab_name_text"/>
-
-    - name: Add msl_ckan specific setting to the Solr config
+    - name: Change default search parameter in the Solr config
       become: yes
       ansible.builtin.replace:
         dest: /etc/solr/conf/solrconfig.xml
@@ -333,9 +294,7 @@
         marker: "# {mark} ANSIBLE MANAGED MSL_CKAN BLOCK"
         block: |
           # msl_ckan settings
-          scheming.dataset_schemas      = ckanext.msl_ckan:schemas/datasets/cd2_data.collection.yml
-          scheming.group_schemas        = ckanext.msl_ckan:schemas/groups/cd2_cohort.yml
-          scheming.organization_schemas = ckanext.msl_ckan:schemas/organizations/cohort_study.yml
+          scheming.dataset_schemas      = ckanext.msl_ckan:schemas/datasets/cd2_data.collection.yml ckanext.msl_ckan:schemas/datasets/ddi_studyunit.yml ckanext.msl_ckan:schemas/datasets/ddi_group.yml ckanext.msl_ckan:schemas/datasets/cd2_study.yml
           # msl_ckan_util settings
           mslfacets.dataset_config      = ckanext.msl_ckan:config/facets.json
           mslindexfields.field_config   = ckanext.msl_ckan:config/msl_index_fields.json
