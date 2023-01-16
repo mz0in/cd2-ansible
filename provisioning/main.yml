@@ -255,7 +255,7 @@
     - name: Install ckanext-msl_ckan repository
       become: yes
       ansible.builtin.pip:
-        name: git+ssh://git@github.com/UtrechtUniversity/cd2-ckan.git#egg=ckanext-msl_ckan
+        name: git+ssh://git@github.com/UtrechtUniversity/cd2-config.git#egg=ckanext-msl_ckan
         virtualenv: /usr/lib/ckan/default
         editable: yes
 
