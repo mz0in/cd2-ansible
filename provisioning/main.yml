@@ -267,6 +267,14 @@
         name: git+ssh://git@github.com/UtrechtUniversity/ckanext-cd2_theme.git#egg=ckanext-cd2_theme
         virtualenv: /usr/lib/ckan/default
         editable: yes
+        
+    - name: Copy new Solr schema file
+      become: yes
+      file:
+        src: /usr/lib/ckan/default/src/ckanext-msl-ckan/ckanext/msl_ckan/config/schema.xml
+        dest: /usr/lib/ckan/default/src/ckan/ckan/config/solr/schema.xml
+        state: link
+        force: yes
 
     - name: Compile CD² theme CSS
       become: yes
