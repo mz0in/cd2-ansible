@@ -150,7 +150,7 @@
         line: ckan.site_intro_text = The CD² metadata catalogue aggregates the metadata of the Dutch youth development cohort studies collaborating under the Consortium on Individual Development (CID) umbrella.
         insertafter: ^ckan\.site_description =.*
 
-    - name: Set ckan.dataset.create_on_ui_requires_resources to false in CKAN config, and increase search facets limit
+    - name: Set ckan.dataset.create_on_ui_requires_resources to false in CKAN config, increase search facets limit, and add additional public directory
       become: yes
       ansible.builtin.blockinfile:
         path: /etc/ckan/default/ckan.ini
@@ -161,6 +161,8 @@
           ckan.dataset.create_on_ui_requires_resources = false
           ## Search facet settings
           search.facets.limit = 500
+          ## Add msl-ckan public directory as extra public path
+          extra_public_paths = /usr/lib/ckan/default/src/ckanext-msl-ckan/ckanext/msl_ckan/public
 
     - name: Set ckan.dataset.create_on_ui_requires_resources to false in CKAN config (proper formatting)
       become: yes
