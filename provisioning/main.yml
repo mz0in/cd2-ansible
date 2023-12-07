@@ -295,7 +295,7 @@
         path: /etc/ckan/default/ckan.ini
         backrefs: yes
         regexp: ^(ckan\.plugins = .* recline_view).*$
-        line: \1 cd2_theme msl_ckan scheming_datasets scheming_groups scheming_organizations msl_custom_facets msl_repeating_fields
+        line: \1 cd2_theme msl_ckan scheming_datasets scheming_groups scheming_organizations msl_custom_facets msl_repeating_fields pages
 
 
     - name: Change default search parameter in the Solr config
