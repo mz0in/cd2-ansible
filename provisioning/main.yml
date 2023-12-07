@@ -218,6 +218,13 @@
         name: git+https://github.com/ckan/ckanext-scheming.git#egg=ckanext-scheming
         virtualenv: /usr/lib/ckan/default
         editable: yes
+        
+    - name: Install ckanext-pages extension
+      become: yes
+      ansible.builtin.pip:
+        name: git+https://github.com/ckan/ckanext-pages.git#egg=ckanext-pages
+        virtualenv: /usr/lib/ckan/default
+        editable: yes
 
     # An SSH keypair with access to the cd2 repository should be placed in the provisioning/files/
     # directory. The filenames of the keypair files must begin with id_ (e.g. id_rsa + id_rsa.pub).
